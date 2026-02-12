@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de datos sensoriales</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='static.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-logo">?Qué analizaremos hoy?</div>
+        <ul class="nav-links">
+            <li><a href="#">BIO</a></li>
+            <li><a href="#">SENSORES</a></li>
+            <li><a href="#">REGISTRO</a></li>
+        <li><a href="#">CONFIGURACIÓN</a></li>
+        </ul>
+    </nav>
+
+    <div class="main-container">
+        
+        <div class="left-column">
+            <div class="glass-card profile-card">
+                <div class="avatar">
+                    <i class="fa-solid fa-user-astronaut"></i>
+                </div>
+                <h2>Isaac Kob Tec</h2>
+                <p class="subtitle">Soy un estudiante que trata de pasar el examen de Diseño Web</p>
+                
+                <div class="status-box">
+                    <span>Estado MQTT:</span>
+                    <div id="mqtt-status" class="badge offline">Desconectado</div>
+                </div>
+
+                <div class="social-icons">
+                    <a href="https://github.com/01240718049010h-rgb" target="_blank"><i class="fa-brands fa-github"></i></a>
+                    <a href="https://facebook.com/Isa.Elias.2006" target="_blank"><i class="fa-brands fa-facebook"></i></a>
+                    <a href="https://instagram.com/isaa.kte?igsh=dmFoMmRsb3B6b21x" target="_blank"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://linkedin.com" target="_blank"><i class="fa-brands fa-linkedin"></i></a>
+                    <a href="https://twitter.com" target="_blank"><i class="fa-brands fa-twitter"></i></a>
+                </div>
+            </div>
+
+            <div class="glass-card info-card">
+                <h3><i class="fa-solid fa-server"></i> Base de Datos</h3>
+                <p>Guardando registros en <strong>DataBase.db</strong></p>
+                <div class="db-indicator">
+                    <div class="dot"></div> Grabando...
+                </div>
+            </div>
+
+            <div class="glass-card info-card download-section">
+                <h4><i class="fa-solid fa-file-pdf"></i> Descargar Biografía</h4>
+                <a href="{{ url_for('static', filename='ConsEstud[24s001].pdf') }}" download class="download-btn">
+                    <i class="fa-brands fa-download"></i> DOWNLOAD CV
+                </a>
+            </div>
+                
+        </div>
+
+        <div class="right-column">
+            <h2 class="section-title">LECTURAS EN TIEMPO REAL</h2>
+            
+            <div class="sensors-grid">
+                <div class="sensor-card">
+                    <div class="icon-sensor"><i class="fa-solid fa-droplet"></i></div>
+                    <h3>Humedad</h3>
+                    <div class="value">
+                        <span id="val-hum">--</span><small>%</small>
+                    </div>
+                </div>
+
+                <div class="sensor-card">
+                    <div class="icon-sensor"><i class="fa-solid fa-ruler-horizontal"></i></div>
+                    <h3>Distancia</h3>
+                    <div class="value">
+                        <span id="val-dist">--</span><small>cm</small>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="log-title">Últimos Registros</h3>
+            <div class="log-container" id="log-box">
+                <div class="log-item normal">
+                    <span class="time">--:--:--</span>
+                    <span class="msg">Esperando datos del sensor...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function actualizarDashboard() {
+            fetch('/api/tiempo_real')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('val-hum').innerText = data.Humedad;
+                    document.getElementById('val-dist').innerText = data.Distancia;
+                    
+                    const badge = document.getElementById('mqtt-status');
+                    badge.innerText = data.mqtt;
+                    if(data.mqtt === "Conectado") {
+                        badge.className = "badge online";
+                    } else {
+                        badge.className = "badge offline";
+                    }
+
+                    agregarLog(data.ultimo_mensaje, data.Humedad, data.Distancia);
+                })
+                .catch(err => console.error("Error conectando con API:", err));
+        }
+
+        function agregarLog(hora, hum, dist) {
+            const box = document.getElementById('log-box');
+            if(hum == 0 && dist == 0) return;
+
+            const html = `
+                <div class="log-item normal">
+                    <span class="time">${hora}</span>
+                    <span class="msg">Humedad: ${hum}% | Dist: ${dist}cm</span>
+                </div>
+            `;
+            box.insertAdjacentHTML('afterbegin', html);
+            if(box.children.length > 11) box.lastElementChild.remove();
+        }
+
+        setInterval(actualizarDashboard, 2000);
+    </script>
+</body>
+</html>
